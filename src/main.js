@@ -33,9 +33,19 @@ var GameStats = {
     context:null,
     galaxy:null,
     playerId:null,
+    notifications:[],
+    version:'0.1',
     init(){
-       document.addEventListener('DOMContentLoaded', this.onLocalLoad.bind(this));
-    //   this.getData();
+        if(this.isProd()) {
+              this.getData();
+        }else{
+            document.addEventListener('DOMContentLoaded', this.onLocalLoad.bind(this));
+
+        }
+    
+    },
+    isProd(){
+        return location.hostname.includes('np.');
     },
     getData(){
         jQuery.ajax({
@@ -54,12 +64,16 @@ var GameStats = {
     onLocalLoad(){
         this.canvas = document.querySelector('#game');
         this.context = this.canvas.getContext('2d');
-        this.sizeCanvas();
-        this.addImage();
+        
+       // this.addImage();
         this.onLoaded();
     },
     onLoaded(data){
-        console.log('full data report', data ? data.report : Data.universe.report);
+        if(localStorage.getItem('version') !== this.version) {
+            localStorage.clear();
+            localStorage.setItem('version', this.version);
+        }
+        // console.log('full data report', data ? data.report : Data.universe.report);
         this.galaxy = data ? data.report : Data.universe.report;
         this.playerId = this.galaxy.player_uid;
         this.timeToProduction();
@@ -71,11 +85,145 @@ var GameStats = {
         this.allTechInfo(this.playerId)
         this.myStarInfo();
         this.notes();
+
        
-        window.starETA = (fleetId, starId) => this.addFleetWaypointByStar(fleetId, starId);
-        window.techCalculator = (techId)=> console.log(this.techCalculator(techId));
-        window.timeToTick = (t) => console.log(this.timeToTick(t));
-        window.getMyStars = () => console.log(this.getMyStars());
+        
+
+        if(this.isProd()) {
+            setTimeout(()=> this.getData(), (1000 * 60) * 10);
+            setTimeout(()=>  this.storeStarInfo(), (1000 * 60) * 10);
+        }else{
+            if(Simulation)Simulation.simulateGame();
+        }
+
+        this.ai();
+        if(GameStatesUI)GameStatesUI.init();
+        AI.init();
+    },
+    ai(){
+        //compare stars
+        let starInfo = localStorage.getItem('starInfo');
+        if(starInfo)
+        {
+            starInfo = JSON.parse(starInfo);
+            var diff = Math.abs(new Date(starInfo.timestamp) - new Date());
+            var minutes = Math.floor((diff/1000)/60);
+            if(minutes < 20) {
+               const notifications = {};
+                //compare 
+                const currentVisibleStars = this.getVisibleStarInfo().visibleStars;
+                //compare ship and industry and economy
+                starInfo.visibleStars.forEach(star =>{
+                    const current = currentVisibleStars.find(item => item.uid == star.uid);
+                    notifications[star.puid] = notifications[star.puid] || {};
+                    notifications[star.puid].star = notifications[star.puid].star || [];
+                    const playerName = this.galaxy.players[star.puid] ? this.galaxy.players[star.puid].alias : 'unknown';
+                    let starDetails;
+                    let type = '';
+                    if(star.e < current.e)
+                    {
+                        type = 'economy';
+                        starDetails =
+                            {
+                                starId:star.uid, 
+                                type:'economy',  
+                                economy: star.e, 
+                                current_economy:current.e
+                            };
+                            this.addNotification(playerName,star.puid,starDetails,   `star ${star.n} has increased its ${type} from $prevously to $current`, type);
+                           
+                    }
+                    if(star.i < current.i)
+                    {
+                        type = 'industry';
+                        starDetails =
+                            {
+                            starId:star.uid, 
+                            type:'industry',  
+                            industry: star.i, 
+                            current_industry:current.i
+                        };
+                        this.addNotification(playerName,star.puid,starDetails,   `star ${star.n} has increased its ${type} from $prevously to $current`, type);
+                    }
+                    if(star.s < current.s)
+                    {
+                        type = 'science';
+                        starDetails =
+                            {
+                            starId:star.uid, 
+                            type:'science',  
+                            science: star.s, 
+                            current_science:current.s
+                        };
+                        this.addNotification(playerName,star.puid,starDetails,   `star ${star.n} has increased its ${type} from $prevously to $current`, type);
+                    }
+                    if(star.st + 10 < current.st)
+                    {
+                        type = 'ships';
+                        starDetails =
+                            {
+                            starId:star.uid, 
+                            type:'ships',  
+                            ships: star.st, 
+                            current_ships:current.st
+                        };
+                        this.addNotification(playerName,star.puid,starDetails,   `star ${star.n} has increased its ${type} from $prevously to $current`, type);
+                    }
+                    
+
+                   
+                });
+
+            }
+        }
+    },
+    uuidv4() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
+      },
+      clearAllNotifications(){
+        this.notifications = [];
+      },
+      removedNotification(uid){
+        for(let a=0; a < this.notifications.length; ++a) {
+            if(uid == this.notifications[a].uid) {
+                this.notifications.splice(a, 1);
+                break;
+            }
+        }
+      },
+    addNotification(playerName,playerId, starInfo, message, type){
+        const findNotification = this.notifications.find(item => item.star.starId == starInfo.starId);
+        if(findNotification){
+            findNotification.playerName = playerName;
+            findNotification.playerId = playerId;
+            findNotification.star = {
+                ...findNotification.star,
+                [starInfo.type]:{
+                    prevously: findNotification.star[starInfo.type] ? findNotification.star[starInfo.type].prevously : starInfo[starInfo.type],
+                    current: starInfo[`current_${starInfo.type}`]
+                }
+            }
+            
+        }else{
+            this.notifications.push({
+                uid: this.uuidv4(),
+                playerName,
+                playerId,
+                star: {
+                    starId: starInfo.starId,
+                    [starInfo.type]:{
+                        prevously: starInfo[starInfo.type],
+                        current: starInfo[`current_${starInfo.type}`]
+                    }
+                },
+                message,
+                type,
+            }) ;
+        }
+      //console.log('notifications', this.notifications);
     },
     getMyStars(){
         const collection = {};
@@ -84,25 +232,49 @@ var GameStats = {
         });
         return collection;
     },
+    comparePlayers(){
+        return Object.keys(this.galaxy.players).map(key => {
+            const player = this.galaxy.players[key];
+            const techLevels = {};
+            Object.keys(player.tech).forEach(key => {
+                techLevels[key] = player.tech[key].level;
+            })
+            return {
+                name: player.alias,
+                economy: player.total_economy,
+                fleets: player.total_fleets,
+                industry: player.total_industry,
+                science: player.total_science,
+                stars: player.total_stars,
+                ships: player.total_strength,
+                ...techLevels,
+            }
+        })
+    },
     getPlayerInfo(playerId){
         const player = this.galaxy.players[playerId];
-        console.table({
+        const info = {
             totalScience: player.total_science,
             totalIndustry: player.total_industry,
             totalShips: player.total_strength,
             numberOfStars: player.total_stars,
-        })
+        }
+        //console.table(info);
+        return info;
+    },
+    getStarDetailsById(starId){
+        return this.galaxy.stars[starId];
     },
     battle(starId, defending){
         const star = this.galaxy.stars[starId];
         let attackers = [];
         const defenderInfo = {
             starName: star.n,
-            playerName:  this.galaxy.players[star.puid].alias,
-            playerWeaponsLevel: this.galaxy.players[star.puid].tech.weapons.level,
+            playerName:  this.galaxy.players[star.puid] ? this.galaxy.players[star.puid].alias : 'unknown',
+            playerWeaponsLevel: this.galaxy.players[star.puid] && this.galaxy.players[star.puid].tech.weapons.level,
             numberOfShips: star[this.StarProperties.Ships],
-            shipsPer30Mins: Number(this.shipsPerTickByindustry(this.getStarNameById(starId),undefined, star.puid)),
-            defenderWeaponTech:  this.galaxy.players[star.puid].tech.weapons.level + 1,
+            shipsPer30Mins: this.galaxy.players[star.puid] !== undefined && Number(this.shipsPerTickByindustry(this.getStarNameById(starId),undefined, star.puid)),
+            defenderWeaponTech: this.galaxy.players[star.puid] !== undefined && this.galaxy.players[star.puid].tech.weapons.level + 1,
         }
         if(defending) {
            
@@ -117,7 +289,7 @@ var GameStats = {
                         const hours = Number(etaParts[0].replace('h',''));
                         const minuteShips = Number(etaParts[1].replace('m','')) >= 30 ? 1 : 0;
                         const numberOfShipsOnArrival = shipsCount ? shipsCount + ((defenderInfo.shipsPer30Mins * 2) * hours) + minuteShips : 0;
-                       const playerWeaponsLevel = this.galaxy.players[fleet.puid].tech.weapons.level;
+                       const playerWeaponsLevel = this.galaxy.players[fleet.puid] && this.galaxy.players[fleet.puid].tech.weapons.level;
                        const battleInfo = this.fight(defenderInfo.defenderWeaponTech,playerWeaponsLevel,numberOfShipsOnArrival,  fleet.st);
                        shipsCount = battleInfo.defendersShips;
                        let shipsToWin = numberOfShipsOnArrival;
@@ -154,10 +326,11 @@ var GameStats = {
         });
         this.title('BATTLE CALCULATOR')
         this.subtitle('DEFENDER INFO')
-        console.table(defenderInfo)
+        //console.table(defenderInfo)
         this.subtitle('COMBAT INFO')
-        console.log('ships arriving for battle');
-        console.table(attackers)
+        //console.log('ships arriving for battle');
+        //console.table(attackers)
+        return attackers;
     },
     fight(defenderWeaponsTech, defendersShips, attackersWeaponsTech, attackersShips){
         for (var a = ""; !a; ) {
@@ -178,16 +351,16 @@ var GameStats = {
         }
     },
     title(title){
-        console.log(`%c ${title.toUpperCase()} `, `background:#000; color: #fff; font-size:22px;`);
+        //console.log(`%c ${title.toUpperCase()} `, `background:#000; color: #fff; font-size:22px;`);
     }, 
     subtitle(title){
-        console.log(`%c ${title.toUpperCase()} `, `background:#333; color: #fff; font-size:16px;`);
+        //console.log(`%c ${title.toUpperCase()} `, `background:#333; color: #fff; font-size:16px;`);
     }, 
     log(message, bg, color){
-        console.log(`%c ${message.toUpperCase()} `, `background: ${ bg ? bg : '#222'}; color: ${color ? color :'#bada55'}`);
+        //console.log(`%c ${message.toUpperCase()} `, `background: ${ bg ? bg : '#222'}; color: ${color ? color :'#bada55'}`);
     },
     allTechInfo(playerId){
-        console.group();
+        //console.group();
         this.subtitle('TECH TO PRODUCTION')
         const techToProd = {};
         const player = this.getPlayerById(playerId ? playerId : this.playerId);
@@ -196,8 +369,9 @@ var GameStats = {
             const tech = player.tech[techId];
             techToProd[key] = { ...this.techCalculator(techId, playerId, true) , progress: tech.research + " of " + Number(tech.level) * Number(tech.brr)}
        });
-       console.table(techToProd);
-       console.groupEnd();
+       //console.table(techToProd);
+       //console.groupEnd();
+       return techToProd;
     },
     shipsPerTickByindustry(star, industryLevel, playerId){
         return this.calcShipsPerTick(star, playerId ? playerId : this.playerId, industryLevel);
@@ -223,17 +397,18 @@ var GameStats = {
             });
         });
         this.title('Industry Upgrade');
-        console.group();
-        console.log(`Total number of ships produced per 30 mins ${this.calcShipsPerTickTotal(this.playerId)} and  ${this.calcShipsPerTickTotal(this.playerId) * 6} for every 3 hours`);
-        console.table(collection.sort((a,b) => b.increaseIn3Hours - a.increaseIn3Hours));
-        console.groupEnd()
+        //console.group();
+        //console.log(`Total number of ships produced per 30 mins ${this.calcShipsPerTickTotal(this.playerId)} and  ${this.calcShipsPerTickTotal(this.playerId) * 6} for every 3 hours`);
+        //console.table(collection.sort((a,b) => b.increaseIn3Hours - a.increaseIn3Hours));
+        //console.groupEnd()
     },
     myStarInfo(){
         this.title('Star Information');
         const myStars = this.getMyStars();
+        let topDogs;
         const highResource = Object.keys(myStars).filter(key => {
             const star = myStars[key];
-            if(star.r >= 35 && star.nr >= 30) return true;
+            if(star.r >= 35 || star.nr >= 30) return true;
         }).map(key => {
             const star = myStars[key];
             return {
@@ -241,37 +416,46 @@ var GameStats = {
                 TerraformedResource: star.r,
                 NaturalResource: star.nr,
                 IndustryLevel: star.i,
-                shipsPerTick: this.calcShipsPerTick(key, this.playerId),
+                shipsPer_30Mins: this.calcShipsPerTick(key, this.playerId),
                 topDog: star.r >= 50 && star.nr >= 50,
             }
         }).sort((a,b) => b.NaturalResource - a.NaturalResource);
 
-        const topDogs = Object.keys(myStars).filter(key => {
+         topDogs = Object.keys(myStars).filter(key => {
             const star = myStars[key];
-            if(star.r >= 50 && star.nr >= 50) return true;
+            if(star.r >= 50 || star.nr >= 50) return true;
         }).map(key => {
             const star = myStars[key];
             return {
                 name: key,
                 TerraformedResource: star.r,
                 NaturalResource: star.nr,
-                shipsPerTick: this.calcShipsPerTick(key, this.playerId)
+                shipsPer30Mins: this.calcShipsPerTick(key, this.playerId)
             }
         });
-        console.group();
+        //console.group();
         this.subtitle('PLANETS TO PROTECT');
        if(Object.keys(topDogs).length){
-        console.table(topDogs);
+        //console.table(topDogs);
        }else{
-           console.log('You dont have valuable stars')
+           //console.log('You dont have valuable stars')
        }
-        console.groupEnd();
-        console.group();
+        //console.groupEnd();
+        //console.group();
         this.subtitle('HIGHLY RESOURCED PLANETS');
-        console.table(highResource);
-        console.groupEnd();
+        //console.table(highResource);
+        //console.groupEnd();
         
+        return {
+            topDogs,
+            highResource,
+        }
 
+    },
+    enemyIntel(){
+        Object.keys(this.galaxy.players).forEach(player => {
+
+        })
     },
     techCalculator(techId, playerId, ignoreLog){
         const player = this.getPlayerById(playerId ? playerId : this.playerId);
@@ -286,7 +470,7 @@ var GameStats = {
             timeToTick:  this.timeToTick(time),
           };
         }else{
-            console.log('You have no science');
+            //console.log('You have no science');
             return 0;
         }
        
@@ -298,7 +482,7 @@ var GameStats = {
         return this.galaxy.stars[id].n;
      },
     getStarById(id){
-        return this.galaxy.stars[this.Stars[id]];
+        return this.galaxy.stars[this.Stars[id]] || this.galaxy.stars[id];
      },
     getFleetById(id){
         return this.galaxy.fleets[id];
@@ -327,12 +511,12 @@ var GameStats = {
     timeToProduction(ignoreLog) {
         var t = this.galaxy.production_rate - this.galaxy.production_counter;
         if(ignoreLog) return this.timeToTick(t);
-        console.log('time to production',this.timeToTick(t));
+        //console.log('time to production',this.timeToTick(t));
     },
     daysToProductionTime(time, ignoreLog){
       //  const day = this.galaxy.production_rate == 24 ? 48.442 :  this.galaxy.production_rate;
       if(ignoreLog) return (time/ this.galaxy.production_rate).toFixed(2);
-        console.log((time/ this.galaxy.production_rate).toFixed(2), 'production cycles to complete')
+        //console.log((time/ this.galaxy.production_rate).toFixed(2), 'production cycles to complete')
     },
     populateFleetCollection(){
         Object.keys(this.galaxy.fleets).forEach(key => { 
@@ -351,10 +535,6 @@ var GameStats = {
           base_image.onload = () =>{
             this.context.drawImage(base_image, 0, 0);
           }
-    },
-    sizeCanvas(){
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
     },
     distance(e, t, r, n) {
         var o = Math.sqrt((e - r) * (e - r) + (t - n) * (t - n));
@@ -384,7 +564,9 @@ var GameStats = {
             id:2382884857485748, 
             n:'Fake Fleet'
         };
-        console.log(this.addFleetWaypointByStar(2382884857485748,toStarId,fleet));
+        const info = this.addFleetWaypointByStar(2382884857485748,toStarId,fleet);
+        //console.log(info);
+        return this.timeToTick(info.eta);
     },
     addFleetWaypoints(fleetId, starId) {
         let selectedFleet = this.getFleetById(fleetId);
@@ -398,8 +580,8 @@ var GameStats = {
         selectedFleet.orders.push([0,starId,0,0]);
         selectedFleet.path.push(this.galaxy.stars[starId]);
         if(!ignoreLogs) {
-            console.log(this.calcFleetEta(selectedFleet));
-            console.log(this.timeToTick(selectedFleet.etaFirst))
+            //console.log(this.calcFleetEta(selectedFleet));
+            //console.log(this.timeToTick(selectedFleet.etaFirst))
         }
         return selectedFleet;
     },
@@ -453,6 +635,81 @@ var GameStats = {
         var i = 1e3 * t * 60 * this.galaxy.tick_rate - 1e3 * o * 60 *this.galaxy.tick_rate - n - a;
         return 0 > i ? "0s" : this.formatTime(i, !0, !0)
     },
+    checkTravelCapability(starId, toStarId){
+        const ruler  = this.initRuler();
+        const star = this.galaxy.stars[starId] || this.galaxy.fleets[starId];
+        const toStar= this.galaxy.stars[toStarId];
+        ruler.stars.push(toStar)
+       const updatedRuler = (this.updateRuler(star, ruler));
+        const info =  {
+            time: this.timeToTick(updatedRuler.eta),
+            techLevel: updatedRuler.hsRequired,
+            distance: updatedRuler.ly + ' light years',
+            ly:updatedRuler.ly,
+            eta:updatedRuler.eta,
+        }
+        //console.log(info);
+        return info;
+    },
+    initRuler() {
+       const ruler = {};
+        ruler.stars = [],
+        ruler.eta = 0,
+        ruler.baseEta = 0,
+        ruler.gateEta = 0,
+        ruler.gate = !0,
+        ruler.totalDist = 0,
+        ruler.ly = "0.0",
+        ruler.hsRequired = 0;
+        return ruler;
+    },
+    getVisibleStarInfo(){
+        const visibleStars = this.visibleStars();
+        const starInfo = {
+            production: this.galaxy.production,
+            visibleStars,
+            timestamp: new Date().getTime(),
+        }
+        return starInfo;
+    },
+    storeStarInfo(){
+        localStorage.setItem('starInfo', JSON.stringify(this.getVisibleStarInfo()));
+    },
+    visibleStars(){
+        const collection = [];
+        Object.keys(this.galaxy.stars).forEach(key =>{
+            const star = this.galaxy.stars[key];
+            if(star.hasOwnProperty('st'))collection.push(star);
+        });
+        return collection;
+    },
+    updateRuler(starOrFleet, ruler) {
+        t = starOrFleet;
+        if (t !== ruler.stars[ruler.stars.length - 1]) {
+            "fleet" === t.kind && t.orbiting ? ruler.stars.push(t.orbiting) : ruler.stars.push(t);
+            var r = ruler.stars.length;
+            if (!(2 > r)) {
+                var n = ruler.stars[r - 2]
+                  , o = ruler.stars[r - 1]
+                  , a = this.distance(n.x, n.y, o.x, o.y)
+                  , i = this.galaxy.fleet_speed
+                  , s = Math.floor(a / i) + 1
+                  , l = Math.floor(a / (3 * i)) + 1;
+                ruler.baseEta += s;
+                var c = s
+                  , u = !1;
+                // (e.starsGated(n, o) || e.isGatedFlight(n, o) || e.isGatedFlight(o, n)) && (u = !0,
+                // c = l),
+                ruler.eta += c,
+                ruler.gateEta += u || "fleet" !== n.kind && "fleet" !== o.kind ? l : c,
+                ruler.totalDist += a;
+                var d = 8 * ruler.totalDist;
+                ruler.ly = (Math.round(1e3 * d) / 1e3).toFixed(3),
+                ruler.hsRequired = Math.max(ruler.hsRequired, Math.floor(8 * a) - 2, 1)
+            }
+        }
+        return ruler;
+    },
     formatTime(e, t, r) {
         var n = e / 1e3
           , o = ""
@@ -473,7 +730,25 @@ var GameStats = {
     },
     notes(){
         this.title('NOTES');
-        console.log('ships are produced based on a stars industry * manufacturing level');
+        //console.log('ships are produced based on a stars industry * manufacturing level');
+        //console.log('Upgrade Industry and Science striaght after production starts');
+        //console.log('Develop Economy right before the next cycle');
+        //console.log('Keep fleets outside scanning range. keep one star in scanning range and one out.');
+        //console.log('Use open space as a wall between enemies. Use outter stars as scouts and dont build economy or science on them');
+        //console.log('Build factories closer to home and circle fleets');
+        //console.log('Keep a 7 hour gap between enemies');
+        //console.log('better to attack stars with carriers');
+        //console.log('middle of board then start on weapons');
+        //console.log('banking or experimentation early on');
+        // console.log(`6 Econ, 5 Industry, 4 Research = the Research Specialist or
+ 
+        // 16-17 Econ, 5 Industry, 1 Research = the Econ Specialist
+        
+        // or
+        
+        // 6 Econ, 11-12 Industry, 1 Research = the Industry Specialist`);
+        //console.log(` two turns industry + 1 economy is almost strictly worse than two turns economy + 1 turn industry`);
+        //console.log('prod 1: explore first day, then spend on economy, prod 2: then economy 5 above all and one science')
     }
 }
-GameStats.init();
+

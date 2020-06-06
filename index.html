@@ -2,7 +2,20 @@
     <head>
         <link href="style/main.css" rel="stylesheet"> 
         <script src="src/data.js"></script>
-        <script src="src/main.js"></script>
+        <script src="src/simulation.js"></script>
+        <script src="src/ui.js"></script>
+        <script src="src/canvas.js"></script>
+        <script>
+            window.GameInit = ()=>{
+                GameStats.init();
+                TestCanvas.init();
+            };
+            </script>
+        <script src="src/main.js" onload="GameInit()"></script>
+        <script src="src/np.js"></script>
+        <script src="src/api.js" onload="GameInit()"></script>
+        <script src="src/ai.js" onload="GameInit()"></script>
+        
     </head>
     <body>
         <canvas id="game"></canvas>
