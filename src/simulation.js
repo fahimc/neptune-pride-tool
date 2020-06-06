@@ -10,32 +10,32 @@ var Simulation = {
         const upgrades = ['i', 'st', 'e', 's'];
         const randomUpgradeIndex = Math.floor(Math.random() * ((upgrades.length - 1) - 0 + 1) + 0);
         star[upgrades[randomUpgradeIndex]] += 1; 
-        GameStats.galaxy.stars[star.uid] = star;
+        NeptunesPride.universe.galaxy.stars[star.uid] = star;
 
         if(TestCanvas)TestCanvas.draw();
     },
     reset(){
-        GameStats.galaxy = this.initialData;
+        NeptunesPride.universe.galaxy = this.initialData;
     },
     clean(){
         // console.log('clean');
-        GameStats.galaxy.fleets = {};
-        Object.keys(GameStats.galaxy.players).forEach(k => {
-            const player = GameStats.galaxy.players[k];
-            if(!player.tech) player.tech = {...GameStats.galaxy.players[1].tech};
-            GameStats.galaxy.players[k] = player;
+        NeptunesPride.universe.galaxy.fleets = {};
+        Object.keys(NeptunesPride.universe.galaxy.players).forEach(k => {
+            const player = NeptunesPride.universe.galaxy.players[k];
+            if(!player.tech) player.tech = {...NeptunesPride.universe.galaxy.players[1].tech};
+            NeptunesPride.universe.galaxy.players[k] = player;
         })
     },
     updateStar(starId, data){
-        GameStats.galaxy.stars[starId] = {
-            ...GameStats.galaxy.stars[starId],
+        NeptunesPride.universe.galaxy.stars[starId] = {
+            ...NeptunesPride.universe.galaxy.stars[starId],
             ...data,
         }
         TestCanvas.draw();
     },
     addFleet(starId, ships, destinationStarId){
         const id = GameStats.uuidv4();
-        const star = GameStats.galaxy.stars[starId];
+        const star = NeptunesPride.universe.galaxy.stars[starId];
         let fleet = {
             ...this.FleetObject, 
             x: Number(star.x), 
@@ -55,17 +55,25 @@ var Simulation = {
             n: star.n + ' Fleet'
         };
         fleet = GameStats.calcFleetEta(fleet);
-        GameStats.galaxy.fleets[id] = fleet;
+        NeptunesPride.universe.galaxy.fleets[id] = fleet;
         TestCanvas.draw();
+    },
+    init(){
+            document.addEventListener('DOMContentLoaded', this.onLocalLoad.bind(this));
+       
+    },
+    onLocalLoad(){
+        this.simulateGame();
+        this.runEachSimulation(true)
     },
     simulateGame(){
         if(!this.initialData){
-            this.initialData = {...GameStats.galaxy};
+            this.initialData = {...NeptunesPride.universe.galaxy};
         }else{
             return;
         }
        
-        document.body.appendChild(GameStatesUI.createElement('div', `
+        document.body.appendChild(GameUI.createElement('div', `
         color: white;
         position: absolute;
         z-index: 999999;
@@ -83,7 +91,7 @@ var Simulation = {
         }, (100 * 60) * 1)
         setInterval(()=>{
             GameStats.ai();
-            if(GameStatesUI)GameStatesUI.init();
+           // if(GameStatesUI)GameStatesUI.init();
         },  (300 * 60) * 1)
         setInterval(()=>{
             GameStats.storeStarInfo()
@@ -95,7 +103,7 @@ var Simulation = {
    
         
     },
-    runEachSimulation(){
+    runEachSimulation(ignoreStart){
         const scenarios = [
             this.haveShipsOnAnotherFleetAroundAStar.bind(this),
             this.haveShipsOnMultipleLocalStars.bind(this),
@@ -103,12 +111,12 @@ var Simulation = {
             this.dontHaveEnoughShipsAsBackup.bind(this),
         ];
         if(this.currentScenario >= scenarios.length)return;
-        GameStats.galaxy.stars = {...this.initialData.stars};
+        NeptunesPride.universe.galaxy.stars = {...this.initialData.stars};
         this.clean();
         AI.clean();
         scenarios[this.currentScenario]();
-        NeptunesPride.universe.galaxy = GameStats.galaxy;
-        this.start();
+        NeptunesPride.universe.galaxy = NeptunesPride.universe.galaxy;
+        if(!ignoreStart)this.start();
         this.currentScenario++;
         //  this.scenario();
         // this.start();
@@ -126,7 +134,7 @@ var Simulation = {
         this.updateStar(GameStats.Stars.Mi,{st:50})
         this.updateStar(GameStats.Stars.Haedus,{st:20})
         this.addFleet(GameStats.Stars.Haedus,100)
-        // console.log('here',GameStats.galaxy)
+        // console.log('here',NeptunesPride.universe.galaxy)
     },
     haveShipsOnMultipleLocalStars(){
         this.title('Defend with help from multiple stars');
@@ -152,7 +160,6 @@ var Simulation = {
     },
     start(){
         this.renderInterval = setInterval(() => {
-            AI.init();
             this.render();
         }, this.frameRate);
     },
@@ -160,8 +167,8 @@ var Simulation = {
         clearInterval(this.renderInterval );
     },
     updateStars(){
-        Object.keys(GameStats.galaxy.stars).forEach(key =>{
-            const star = GameStats.galaxy.stars[key];
+        Object.keys(NeptunesPride.universe.galaxy.stars).forEach(key =>{
+            const star = NeptunesPride.universe.galaxy.stars[key];
             if(!star.i) return;
             const tick = GameStats.calcShipsPerTick(star.uid, star.puid);
             if( !isNaN(tick)){
@@ -169,17 +176,17 @@ var Simulation = {
             }
            
         });
-        NeptunesPride.universe.galaxy = GameStats.galaxy;
+        NeptunesPride.universe.galaxy = NeptunesPride.universe.galaxy;
     },
     render(){
         this.updateStars();
-        // console.log(GameStats.galaxy.fleets);
+        // console.log(NeptunesPride.universe.galaxy.fleets);
         let end = false;
-        Object.keys(GameStats.galaxy.fleets).forEach(key =>{
+        Object.keys(NeptunesPride.universe.galaxy.fleets).forEach(key =>{
             if(end)return;
-            const fleet = GameStats.galaxy.fleets[key];
+            const fleet = NeptunesPride.universe.galaxy.fleets[key];
             if(!fleet.o.length)return;
-            const destStar = GameStats.galaxy.stars[fleet.o[0][1]];
+            const destStar = NeptunesPride.universe.galaxy.stars[fleet.o[0][1]];
             // console.log(fleet);
             const travel = GameStats.checkTravelCapability(fleet.currentStar.uid, fleet.o[0][1]);
             const timeParts = travel.time.split(' ');
@@ -219,15 +226,15 @@ var Simulation = {
                }
                
         });
-        NeptunesPride.universe.galaxy = GameStats.galaxy;
+        NeptunesPride.universe.galaxy = NeptunesPride.universe.galaxy;
         TestCanvas.draw();
     },
     isAttacking(fleet){
-        const star = GameStats.galaxy.stars[fleet.ouid];
+        const star = NeptunesPride.universe.galaxy.stars[fleet.ouid];
         if(star.puid !== fleet.puid) {
             this.stop();
-            const player = GameStats.galaxy.players[GameStats.playerId];
-            const attackerPlayer = GameStats.galaxy.players[fleet.puid];
+            const player = NeptunesPride.universe.galaxy.players[GameStats.playerId];
+            const attackerPlayer = NeptunesPride.universe.galaxy.players[fleet.puid];
             // console.log(AI.getShipsOnOrbitingFleets(star), star)
             const ships = AI.getShipsOnOrbitingFleets(star).totalShips + star.st;
             // console.log(star, player.tech.weapons.level,ships,attackerPlayer.tech.weapons.level, fleet.st)
@@ -236,7 +243,7 @@ var Simulation = {
         //    console.log(battleDetails)
            if(battleDetails.defendersShips)
            {
-            delete GameStats.galaxy.fleets[fleet.uid];
+            delete NeptunesPride.universe.galaxy.fleets[fleet.uid];
             star.st = battleDetails.defendersShips;
            }else{
                star.st = battleDetails.attackersShips;
@@ -256,11 +263,11 @@ var Simulation = {
         orders:[[0,star.uid,0,0]],
         path:[star],
        }
-       GameStats.galaxy.fleets[battleFleet.uid] = battleFleet;
+       NeptunesPride.universe.galaxy.fleets[battleFleet.uid] = battleFleet;
     //    console.log('back up sent!')
     },
     transferShips(star,fleet, ships){
-        GameStats.galaxy.fleets[fleet.uid].st += ships;
-        GameStats.galaxy.stars[star.uid].st = GameStats.galaxy.stars[star.uid].st - ships < 0 ? 0: GameStats.galaxy.stars[star.uid].st - ships;
+        NeptunesPride.universe.galaxy.fleets[fleet.uid].st += ships;
+        NeptunesPride.universe.galaxy.stars[star.uid].st = NeptunesPride.universe.galaxy.stars[star.uid].st - ships < 0 ? 0: NeptunesPride.universe.galaxy.stars[star.uid].st - ships;
     }
 };

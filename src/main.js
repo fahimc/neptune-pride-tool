@@ -62,6 +62,7 @@ var GameStats = {
           }) 
     },
     onLocalLoad(){
+
         this.canvas = document.querySelector('#game');
         this.context = this.canvas.getContext('2d');
         
@@ -97,7 +98,7 @@ var GameStats = {
         }
 
         this.ai();
-        if(GameStatesUI)GameStatesUI.init();
+        
         AI.init();
     },
     ai(){
