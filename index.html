@@ -1,35 +1,31 @@
 <html>
-    <head>
-        <link href="style/main.css" rel="stylesheet"> 
-        <!-- <script src="src/ui.js"></script> -->
-        <script>
-            let count = 0;
-            window.GameInit = ()=>{
-                count++;
-                if(count >= 6){
-                    GameStats.init();
-                    TestCanvas.init();
-                    AI.init();
-                    GameUI.init();
-                    Simulation.init();
-                    Helper.init();
-                    
-                }
-                
-            };
-            </script>
-            <script src="src/data.js" onload="GameInit()"></script>
-            <script src="src/canvas.js"  onload="GameInit()"></script>
-            <script src="src/simulation.js"  onload="GameInit()"></script>
-        <script src="src/main.js" ></script>
-        <script src="src/np.js"></script>
-        <script src="src/api.js" onload=""></script>
-        <script src="src/ai-ui.js" onload="GameInit()"></script>
-        <script src="src/ai.js" onload="GameInit()"></script>
-        <script src="src/helper.js" onload="GameInit()"></script>
-        
-    </head>
-    <body>
-        <canvas id="game"></canvas>
-    </body>
+  <head>
+    <link href="style/main.css" rel="stylesheet" />
+    <script>
+      let count = 0;
+      window.GameInit = () => {
+        count++;
+        if (count >= 6) {
+          GameStats.init();
+          TestCanvas.init();
+          AI.init();
+          GameUI.init();
+          Simulation.init();
+          Helper.init();
+        }
+      };
+    </script>
+    <script src="src/data.js" onload="GameInit()"></script>
+    <script src="src/canvas.js" onload="GameInit()"></script>
+    <script src="src/simulation.js" onload="GameInit()"></script>
+    <script src="src/main.js"></script>
+    <script src="src/np.js"></script>
+    <script src="src/api.js" onload=""></script>
+    <script src="src/ai-ui.js" onload="GameInit()"></script>
+    <script src="src/ai.js" onload="GameInit()"></script>
+    <script src="src/helper.js" onload="GameInit()"></script>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+  </body>
 </html>

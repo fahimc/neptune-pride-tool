@@ -329,6 +329,7 @@ var GameUI = {
           font-size: 11px;
         color: white;
         left: 20px;
+        bottom: 0;
       }
     `,
   state: {
@@ -337,7 +338,7 @@ var GameUI = {
     showStar: false,
     showAi: false,
     showFinance: true,
-    triggerPlayerInfo:false,
+    triggerPlayerInfo: false,
   },
   previousPlayerInfo: {},
   previousFinanceInfo: {},
@@ -464,7 +465,7 @@ var GameUI = {
           document
             .querySelector('[data-target="player"]')
             .classList.add("selected");
-            this.state.triggerPlayerInfo = true;
+          this.state.triggerPlayerInfo = true;
           break;
         case "stars":
           document.querySelector(".star-info").classList.add("show");
@@ -522,15 +523,20 @@ var GameUI = {
   },
   createPlayerInfo() {
     const playerInfo = AI.allPlayerStats();
-    if (!this.state.triggerPlayerInfo && this.previousPlayerInfo && this.previousPlayerInfo.players && playerInfo) {
-      let p = this.previousPlayerInfo.players.map(t => {
-         const {experimentationPointsTime, ...all} = t;
-         return all;
-      });
-      let c = playerInfo.players.map(t => {
-        const {experimentationPointsTime, ...all} = t;
+    if (
+      !this.state.triggerPlayerInfo &&
+      this.previousPlayerInfo &&
+      this.previousPlayerInfo.players &&
+      playerInfo
+    ) {
+      let p = this.previousPlayerInfo.players.map((t) => {
+        const { experimentationPointsTime, ...all } = t;
         return all;
-     });
+      });
+      let c = playerInfo.players.map((t) => {
+        const { experimentationPointsTime, ...all } = t;
+        return all;
+      });
 
       if (JSON.stringify(p) == JSON.stringify(c)) return;
     }
@@ -570,7 +576,8 @@ var GameUI = {
   },
   createStarInfo() {
     const starInfo = AI.starsInfo();
-    if (JSON.stringify(starInfo) == JSON.stringify(this.previousStarInfo)) return;
+    if (JSON.stringify(starInfo) == JSON.stringify(this.previousStarInfo))
+      return;
     const current = document.querySelector(".star-info");
     if (current) current.innerHTML = "";
     const section = current || document.createElement("div");
@@ -1106,7 +1113,8 @@ var GameUI = {
             justify-content: flex-end
             `,
       `
-            <div id="gamestats-close-button" class=" " style="position:relative; margin-top:0; cursor:pointer;">x</div>
+            <div id="gamestats-close-button" class=" " style="position:relative; margin-top:0; cursor:pointer;
+            margin-bottom: 5px;">x</div>
             `
     );
   },
