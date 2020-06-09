@@ -99,7 +99,7 @@ var GameStats = {
 
         this.ai();
         
-        AI.init();
+       // AI.init();
     },
     ai(){
         //compare stars
@@ -625,15 +625,15 @@ var GameStats = {
         n
     },
     timeToTick(t, r) {
-        const now = new Date(this.galaxy.now);
+        const now = new Date(NeptunesPride.universe.galaxy.now);
         var n = 0
-          , o =this.galaxy.tick_fragment
+          , o =NeptunesPride.universe.galaxy.tick_fragment
           , a = now.valueOf() - (new Date).valueOf();
-          this.galaxy.paused || (n = (new Date).valueOf() - now.valueOf()),
-        (r || this.galaxy.turn_based) && (n = 0,
+          NeptunesPride.universe.galaxy.paused || (n = (new Date).valueOf() - now.valueOf()),
+        (r || NeptunesPride.universe.galaxy.turn_based) && (n = 0,
         o = 0,
         a = 0);
-        var i = 1e3 * t * 60 * this.galaxy.tick_rate - 1e3 * o * 60 *this.galaxy.tick_rate - n - a;
+        var i = 1e3 * t * 60 * NeptunesPride.universe.galaxy.tick_rate - 1e3 * o * 60 *NeptunesPride.universe.galaxy.tick_rate - n - a;
         return 0 > i ? "0s" : this.formatTime(i, !0, !0)
     },
     checkTravelCapability(starId, toStarId){
