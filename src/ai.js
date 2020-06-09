@@ -1,4 +1,5 @@
 var AI = {
+    version:0.1,
     state: {
         aiMode: false,
         transcript: [],
@@ -7,6 +8,7 @@ var AI = {
         this.alreadyTrackingFleets = {};
     },
     init() {
+        console.log(`version: ${this.version}`)
         localStorage.clear();
         setInterval(Api.reload, (1000 * 60) * 5);
         this.timer = setInterval(() => {
@@ -15,7 +17,7 @@ var AI = {
         this.allPlayerStats();
         this.starsInfo();
         if (window.GameUI) GameUI.update();
-        }, 50);
+        }, 1000);
 
     },
     toggle() {

@@ -1,0 +1,22 @@
+{
+  "name": "neptune-pride-tool",
+  "version": "1.0.0",
+  "description": "",
+  "main": "build.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fahimc/neptune-pride-tool.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/fahimc/neptune-pride-tool/issues"
+  },
+  "homepage": "https://github.com/fahimc/neptune-pride-tool#readme",
+  "dependencies": {
+    "minify": "^5.1.1"
+  }
+}
