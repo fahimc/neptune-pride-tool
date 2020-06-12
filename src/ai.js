@@ -1,5 +1,5 @@
 var AI = {
-    version:0.1,
+    version:0.2,
     state: {
         aiMode: false,
         transcript: [],
@@ -262,7 +262,7 @@ var AI = {
                                         myStar: rangeStar.n,
                                     },
                                     myStar: {
-                                        owner: NeptunesPride.universe.galaxy.players[rangeStar.puid].alias,
+                                        owner: NeptunesPride.universe.galaxy.players[rangeStar.puid] ? NeptunesPride.universe.galaxy.players[rangeStar.puid].alias : 'unknown',
                                         starName: rangeStar.n,
                                         NaturalResource: rangeStar.nr,
                                         Terraformed: rangeStar.r,
@@ -288,7 +288,7 @@ var AI = {
                                     },
                                     enemyStar: {
                                         myStar: star.n,
-                                        owner: NeptunesPride.universe.galaxy.players[rangeStar.puid].alias,
+                                        owner: NeptunesPride.universe.galaxy.players[rangeStar.puid] ? NeptunesPride.universe.galaxy.players[rangeStar.puid].alias : 'unknown',
                                         starName: rangeStar.n,
                                         NaturalResource: rangeStar.nr,
                                         Terraformed: rangeStar.r,
