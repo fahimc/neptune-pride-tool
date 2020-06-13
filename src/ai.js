@@ -1,5 +1,5 @@
 var AI = {
-    version:0.2,
+    version:0.3,
     state: {
         aiMode: false,
         transcript: [],
@@ -71,6 +71,7 @@ var AI = {
             const ships=  me.total_strength - player.total_strength;
             const cash = ((me.total_economy * 10) + (me.tech.banking.level * 75)) - (economyPerProdFromStars + bankingBonus);
            info.push({
+            //    avatar: player.avatar,
                playerName: player.alias,
                cash,
                economy: me.total_economy - player.total_economy,

@@ -523,6 +523,7 @@ var GameUI = {
   },
   createPlayerInfo() {
     const playerInfo = AI.allPlayerStats();
+    const compare = AI.comparePlayers().compare;
     if (
       !this.state.triggerPlayerInfo &&
       this.previousPlayerInfo &&
@@ -550,6 +551,12 @@ var GameUI = {
       section.classList.add("player-info");
       this.contentContainer.appendChild(section);
     }
+
+    const compareSection = this.createBoxSection(
+      'Compare Players',
+      this.createTableFromObject(compare, this.getTableRowsFromArray.bind(this)).innerHTML
+    );
+    section.appendChild(compareSection);
 
     playerInfo.players.forEach((item) => {
       const { uid, ...other } = item;

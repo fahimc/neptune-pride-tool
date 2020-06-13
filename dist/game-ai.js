@@ -64,7 +64,7 @@ var Api = {
 }
 
 var AI = {
-    version:0.1,
+    version:0.3,
     state: {
         aiMode: false,
         transcript: [],
@@ -136,6 +136,7 @@ var AI = {
             const ships=  me.total_strength - player.total_strength;
             const cash = ((me.total_economy * 10) + (me.tech.banking.level * 75)) - (economyPerProdFromStars + bankingBonus);
            info.push({
+            //    avatar: player.avatar,
                playerName: player.alias,
                cash,
                economy: me.total_economy - player.total_economy,
@@ -1363,6 +1364,7 @@ var GameUI = {
   },
   createPlayerInfo() {
     const playerInfo = AI.allPlayerStats();
+    const compare = AI.comparePlayers().compare;
     if (
       !this.state.triggerPlayerInfo &&
       this.previousPlayerInfo &&
@@ -1390,6 +1392,12 @@ var GameUI = {
       section.classList.add("player-info");
       this.contentContainer.appendChild(section);
     }
+
+    const compareSection = this.createBoxSection(
+      'Compare Players',
+      this.createTableFromObject(compare, this.getTableRowsFromArray.bind(this)).innerHTML
+    );
+    section.appendChild(compareSection);
 
     playerInfo.players.forEach((item) => {
       const { uid, ...other } = item;
