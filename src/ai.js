@@ -1,5 +1,5 @@
 var AI = {
-    version:0.3,
+    version:0.4,
     state: {
         aiMode: false,
         transcript: [],
@@ -55,6 +55,7 @@ var AI = {
     },
     comparePlayers(){
         const info = [];
+        const tech = [];
         let numberOfPlayers = 0;
         const counts = {
             weapons:0,
@@ -68,27 +69,37 @@ var AI = {
             const bankingBonus = player.tech.banking.level * 75;
             const me = NeptunesPride.universe.galaxy.players[NeptunesPride.universe.galaxy.player_uid];
             const weapons = me.tech.weapons.level - player.tech.weapons.level;
-            const ships=  me.total_strength - player.total_strength;
+            const ships=  me.total_strength - player.total_strength  < 0 ?  `<span class="red-color">${  me.total_strength - player.total_strength}</span>` :   me.total_strength - player.total_strength   ;
             const cash = ((me.total_economy * 10) + (me.tech.banking.level * 75)) - (economyPerProdFromStars + bankingBonus);
            info.push({
             //    avatar: player.avatar,
                playerName: player.alias,
-               cash,
-               economy: me.total_economy - player.total_economy,
-               fleets: me.total_fleets - player.total_fleets,
-               industry: me.total_industry - player.total_industry,
-               science: me.total_science - player.total_science,
-               stars: me.total_stars - player.total_stars,
-               ships,
-               weapons,
-               range: me.tech.propulsion.level - player.tech.propulsion.level,
-               scanning: me.tech.scanning.level - player.tech.scanning.level,
-               manufacturing: me.tech.manufacturing.level - player.tech.manufacturing.level,
+               cash: cash  < 0 ?  `<span class="red-color">${ cash}</span>` : cash,
+               economy: me.total_economy - player.total_economy < 0 ?  `<span class="red-color">${me.total_economy - player.total_economy}</span>` :   me.total_economy - player.total_economy,
+               fleets: me.total_fleets - player.total_fleets  < 0 ?  `<span class="red-color">${ me.total_fleets - player.total_fleets}</span>` : me.total_fleets - player.total_fleets,
+               industry: me.total_industry - player.total_industry  < 0 ?  `<span class="red-color">${me.total_industry - player.total_industry}</span>` :me.total_industry - player.total_industry,
+               science: me.total_science - player.total_science  < 0 ?  `<span class="red-color">${ me.total_science - player.total_science }</span>` : me.total_science - player.total_science ,
+               stars: me.total_stars - player.total_stars  < 0 ?  `<span class="red-color">${ me.total_stars - player.total_stars  }</span>` : me.total_stars - player.total_stars,
+               ships: ships  < 0 ?  `<span class="red-color">${ ships }</span>` : ships,
+               weapons: weapons < 0 ?  `<span class="red-color">${weapons }</span>` : weapons,
+               range: me.tech.propulsion.level - player.tech.propulsion.level < 0 ?  `<span class="red-color">${  me.tech.propulsion.level - player.tech.propulsion.level  }</span>` : me.tech.propulsion.level - player.tech.propulsion.level,
+               scanning: me.tech.scanning.level - player.tech.scanning.level < 0 ?  `<span class="red-color">${ me.tech.scanning.level - player.tech.scanning.level }</span>` :  me.tech.scanning.level - player.tech.scanning.level,
+               manufacturing: me.tech.manufacturing.level - player.tech.manufacturing.level < 0 ?  `<span class="red-color">${ me.tech.manufacturing.level - player.tech.manufacturing.level  }</span>` : me.tech.manufacturing.level - player.tech.manufacturing.level,
            });
            if(weapons < 0)counts.weapons++;
            if(ships < 0)counts.ships++;
            if(cash < 0)counts.cash++;
            numberOfPlayers++;
+           tech.push({
+            playerName: player.alias,
+            scanning: player.tech.scanning.level,
+            manufacturing: player.tech.manufacturing.level,
+            weapons: player.tech.weapons.level,
+            research: player.tech.research.level,
+            propulsion: player.tech.propulsion.level,
+            terraforming: player.tech.terraforming.level,
+            banking: player.tech.banking.level,
+           });
         });
         const recommendations = [];
         
@@ -119,6 +130,7 @@ var AI = {
 
        return {
            compare: info,
+           tech,
            recommendations,
         };
     },

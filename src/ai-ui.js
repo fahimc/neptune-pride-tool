@@ -12,6 +12,9 @@ var GameUI = {
     .orange-color {
             color: orange;
     }
+    .red-color {
+      color: #e74c3c;
+}
     .switch {
         position: relative;
         display: inline-block;
@@ -524,6 +527,7 @@ var GameUI = {
   createPlayerInfo() {
     const playerInfo = AI.allPlayerStats();
     const compare = AI.comparePlayers().compare;
+    const tech = AI.comparePlayers().tech;
     if (
       !this.state.triggerPlayerInfo &&
       this.previousPlayerInfo &&
@@ -557,6 +561,12 @@ var GameUI = {
       this.createTableFromObject(compare, this.getTableRowsFromArray.bind(this)).innerHTML
     );
     section.appendChild(compareSection);
+
+    const techSection = this.createBoxSection(
+      'Compare Tech',
+      this.createTableFromObject(tech, this.getTableRowsFromArray.bind(this)).innerHTML
+    );
+    section.appendChild(techSection);
 
     playerInfo.players.forEach((item) => {
       const { uid, ...other } = item;
